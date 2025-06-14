@@ -6,7 +6,7 @@
 </head>
 <body>
 <h1>Logowanie do systemu</h1>
-<form action="login.php" method="post">
+<form action="logowanie.php" method="post">
     <label for="username">Nazwa użytkownika:</label>
     <input type="text" id="username" name="username" required>
     <br>
