@@ -13,9 +13,9 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'klient') {
 </head>
 <body>
 <h1>Witaj, <?php echo htmlspecialchars($_SESSION['username']); ?>! To jest panel klienta.</h1>
-<a href="karty.php">Przeglądaj karty</a><br>
-<a href="kredyty.php">Kredyt</a><br>
-<a href="przelew.php">Przelew</a><br>
-<a href="wylogowanie.php">Wyloguj</a>
+    <a href="karty.php">Przeglądaj karty</a><br>
+    <a href="kredyty.php">Kredyt</a><br>
+    <a href="przelew.php">Przelew</a><br>
+    <a href="wylogowanie.php">Wyloguj</a>
 </body>
 </html>
