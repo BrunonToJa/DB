@@ -16,6 +16,7 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'klient') {
     <a href="karty.php">Przeglądaj karty</a><br>
     <a href="kredyt.php">Kredyt</a><br>
     <a href="przelew.php">Przelew</a><br>
+    <a href="historia.php">Historia transakcji</a><br>
     <a href="wylogowanie.php">Wyloguj</a>
 </body>
 </html>
