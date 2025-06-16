@@ -33,6 +33,7 @@ $mysqli->close();
 <!DOCTYPE html>
 <html lang="pl">
 <head>
+    <link rel="stylesheet" href="style/style.css">
     <meta charset="UTF-8">
     <title>Historia transakcji</title>
 </head>

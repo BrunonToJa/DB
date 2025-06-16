@@ -31,20 +31,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $kwota = floatval($_POST['kwota'] ?? 0);
     $opis = $_POST['opis'] ?? '';
 
-    $proc = $mysqli->prepare('CALL PrzelewNaNumerKonta(?, ?, ?, ?)');
-    $proc->bind_param('ssds', $konto_nadawcy, $konto_odbiorcy, $kwota, $opis);
-    if ($proc->execute()) {
-        $success = true;
+    if ($kwota <= 0) {
+        $error = 'Kwota musi by\u0107 dodatnia.';
     } else {
-        $error = 'Nie uda\u0142o si\u0119 wykonac przelewu.';
+        $proc = $mysqli->prepare('CALL PrzelewNaNumerKonta(?, ?, ?, ?)');
+        $proc->bind_param('ssds', $konto_nadawcy, $konto_odbiorcy, $kwota, $opis);
+        if ($proc->execute()) {
+            $success = true;
+        } else {
+            $error = 'Nie uda\u0142o si\u0119 wykonac przelewu.';
+        }
+        $proc->close();
     }
-    $proc->close();
 }
 $mysqli->close();
 ?>
 <!DOCTYPE html>
 <html lang="pl">
 <head>
+    <link rel="stylesheet" href="style/style.css">
     <meta charset="UTF-8">
     <title>Przelew</title>
 </head>
@@ -57,7 +62,7 @@ $mysqli->close();
 <?php endif; ?>
 <form method="post" action="przelew.php">
     <label>Numer konta odbiorcy: <input type="text" name="konto_odbiorcy" required></label><br>
-    <label>Kwota: <input type="number" step="0.01" name="kwota" required></label><br>
+    <label>Kwota: <input type="number" step="0.01" min="0.01" name="kwota" required></label><br>
     <label>Tytuł/Opis: <input type="text" name="opis"></label><br>
     <input type="submit" value="Wyślij">
 </form>

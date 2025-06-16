@@ -8,6 +8,7 @@ require_once 'db_connect.php';
 
 $username = $_SESSION['username'];
 
+// Pobierz identyfikator uzytkownika
 $stmt = $mysqli->prepare('SELECT id FROM uzytkownicy WHERE nazwa_uzytkownika = ?');
 $stmt->bind_param('s', $username);
 $stmt->execute();
@@ -15,6 +16,7 @@ $stmt->bind_result($user_id);
 $stmt->fetch();
 $stmt->close();
 
+// Pobierz identyfikator klienta
 $stmt = $mysqli->prepare('SELECT id FROM klienci WHERE uzytkownik_id = ?');
 $stmt->bind_param('i', $user_id);
 $stmt->execute();
@@ -28,20 +30,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $kwota = floatval($_POST['kwota'] ?? 0);
     $liczba_rat = intval($_POST['liczba_rat'] ?? 0);
 
-    $proc = $mysqli->prepare('CALL DodajKredyt(?, ?, ?)');
-    $proc->bind_param('idi', $klient_id, $kwota, $liczba_rat);
-    if ($proc->execute()) {
-        $success = true;
+    if ($kwota <= 0 || $liczba_rat <= 0) {
+        $error = 'Kwota i liczba rat musz\u0105 by\u0107 dodatnie.';
     } else {
-        $error = 'Nie uda\u0142o si\u0119 doda\u0107 kredytu.';
+        $proc = $mysqli->prepare('CALL DodajKredyt(?, ?, ?)');
+        $proc->bind_param('idi', $klient_id, $kwota, $liczba_rat);
+        if ($proc->execute()) {
+            $success = true;
+        } else {
+            $error = 'Nie uda\u0142o si\u0119 doda\u0107 kredytu.';
+        }
+        $proc->close();
     }
-    $proc->close();
 }
 $mysqli->close();
 ?>
 <!DOCTYPE html>
 <html lang="pl">
 <head>
+    <link rel="stylesheet" href="style/style.css">
     <meta charset="UTF-8">
     <title>Kredyt</title>
 </head>
@@ -53,8 +60,8 @@ $mysqli->close();
 <p style="color: red;"><?php echo $error; ?></p>
 <?php endif; ?>
 <form method="post" action="kredyt.php">
-    <label>Kwota kredytu: <input type="number" step="0.01" name="kwota" required></label><br>
-    <label>Liczba rat: <input type="number" name="liczba_rat" required></label><br>
+    <label>Kwota kredytu: <input type="number" step="0.01" min="0.01" name="kwota" required></label><br>
+    <label>Liczba rat: <input type="number" min="1" name="liczba_rat" required></label><br>
     <input type="submit" value="Wyślij">
 </form>
 <a href="klient.php">Powrót</a>

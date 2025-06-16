@@ -8,6 +8,7 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'klient') {
 <!DOCTYPE html>
 <html lang="pl">
 <head>
+    <link rel="stylesheet" href="style/style.css">
     <meta charset="UTF-8">
     <title>Panel klienta</title>
 </head>
