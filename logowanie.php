@@ -21,19 +21,15 @@ if ($stmt->num_rows === 1)
     if ($success) {
         $_SESSION['username'] = $username;
         $_SESSION['role'] = $role;
-        $log_stmt = $mysqli->prepare("INSERT INTO logi_dostepu (uzytkownik_id, sukces) VALUES (?, 1)");
-        $log_stmt->bind_param('i', $user_id);
-        $log_stmt->execute();
+        $proc = $mysqli->prepare('CALL ZalogujUzytkownika(?, ?)');
+        $proc->bind_param('ii', $user_id, $success);
+        $proc->execute();
+        $proc->close();;
         if ($role === 'administrator') {
             $redirect = 'admin.php';
         } else {
             $redirect = 'klient.php';
         }
-    } else {
-        $log_stmt = $mysqli->prepare("INSERT INTO logi_dostepu (uzytkownik_id, sukces) VALUES (?, 0)");
-        $log_stmt->bind_param('i', $user_id);
-        $log_stmt->execute();
-        $redirect = ($role === 'administrator') ? 'admin.php' : 'klient.php';
     }
 }
 
