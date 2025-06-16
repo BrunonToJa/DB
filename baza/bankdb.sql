@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Cze 14, 2025 at 01:07 PM
+-- Generation Time: Cze 15, 2025 at 08:22 PM
 -- Wersja serwera: 10.4.32-MariaDB
 -- Wersja PHP: 8.2.12
 
@@ -20,6 +20,69 @@ SET time_zone = "+00:00";
 --
 -- Database: `bankdb`
 --
+
+DELIMITER $$
+--
+-- Procedury
+--
+CREATE DEFINER=`root`@`localhost` PROCEDURE `DodajKredyt` (IN `in_klient_id` INT, IN `in_kwota_kredytu` DECIMAL(15,2), IN `in_liczba_rat` INT)   BEGIN
+    DECLARE in_pozostale_raty INT DEFAULT in_liczba_rat;
+    DECLARE in_pozostala_kwota DECIMAL(15,2) DEFAULT in_kwota_kredytu;
+
+    INSERT INTO kredyty (
+        klient_id, kwota_kredytu, liczba_rat, pozostale_raty, pozostala_kwota
+    )
+    VALUES (
+        in_klient_id, in_kwota_kredytu, in_liczba_rat, in_pozostale_raty, in_pozostala_kwota
+    );
+
+    UPDATE klienci
+    SET saldo = saldo + in_kwota_kredytu
+    WHERE id = in_klient_id;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `PrzelewNaNumerKonta` (IN `in_nadawca_konto` VARCHAR(30), IN `in_odbiorca_konto` VARCHAR(30), IN `in_kwota` DECIMAL(15,2), IN `in_opis` VARCHAR(255))   BEGIN
+    DECLARE nadawca_id INT;
+    DECLARE odbiorca_id INT;
+    DECLARE saldo_nadawcy DECIMAL(15,2);
+
+    -- Pobierz ID klientów
+    SELECT id, saldo INTO nadawca_id, saldo_nadawcy
+    FROM klienci
+    WHERE numer_konta = in_nadawca_konto;
+
+    SELECT id INTO odbiorca_id
+    FROM klienci
+    WHERE numer_konta = in_odbiorca_konto;
+
+    -- Sprawdź, czy nadawca ma wystarczające środki
+    IF saldo_nadawcy >= in_kwota THEN
+        -- Odejmij środki nadawcy
+        UPDATE klienci
+        SET saldo = saldo - in_kwota
+        WHERE id = nadawca_id;
+
+        -- Dodaj środki odbiorcy
+        UPDATE klienci
+        SET saldo = saldo + in_kwota
+        WHERE id = odbiorca_id;
+
+        -- Zapisz transakcję u nadawcy
+        INSERT INTO transakcje (klient_id, kwota, typ_transakcji, opis)
+        VALUES (nadawca_id, in_kwota, 'przelew', CONCAT('Przelew do ', in_odbiorca_konto, ' TYTUŁ: ', in_opis));
+
+        -- Zapisz transakcję u odbiorcy
+        INSERT INTO transakcje (klient_id, kwota, typ_transakcji, opis)
+        VALUES (odbiorca_id, in_kwota, 'wplata', CONCAT('Otrzymano przelew od ', in_nadawca_konto, ' TYTUŁ: ', in_opis));
+    END IF;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ZalogujUzytkownika` (IN `in_uzytkownik_id` INT, IN `in_sukces` TINYINT(1))   BEGIN
+    INSERT INTO logi_dostepu (uzytkownik_id, sukces)
+    VALUES (in_uzytkownik_id, in_sukces);
+END$$
+
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -62,8 +125,8 @@ CREATE TABLE `klienci` (
 --
 
 INSERT INTO `klienci` (`id`, `uzytkownik_id`, `imie`, `nazwisko`, `numer_konta`, `saldo`) VALUES
-(3, 5, 'Karol', 'Grajek', '51162946997417335010881787', 316008.00),
-(5, 7, 'Anita', 'Anita', '10950320095511098488059314', 99992.00);
+(3, 5, 'Karol', 'Grajek', '51162946997417335010881787', 40224.65),
+(5, 7, 'Anita', 'Anita', '10950320095511098488059314', 100004.00);
 
 -- --------------------------------------------------------
 
@@ -81,6 +144,13 @@ CREATE TABLE `kredyty` (
   `data_udzielenia` date DEFAULT curdate()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `kredyty`
+--
+
+INSERT INTO `kredyty` (`id`, `klient_id`, `kwota_kredytu`, `liczba_rat`, `pozostale_raty`, `pozostala_kwota`, `data_udzielenia`) VALUES
+(1, 3, 23.00, 2, 2, 23.00, '2025-06-15');
+
 -- --------------------------------------------------------
 
 --
@@ -93,6 +163,15 @@ CREATE TABLE `logi_dostepu` (
   `data_logowania` timestamp NOT NULL DEFAULT current_timestamp(),
   `sukces` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `logi_dostepu`
+--
+
+INSERT INTO `logi_dostepu` (`id`, `uzytkownik_id`, `data_logowania`, `sukces`) VALUES
+(3, 5, '2025-06-15 18:00:02', 1),
+(4, 5, '2025-06-15 18:08:00', 1),
+(5, 2, '2025-06-15 18:16:28', 1);
 
 -- --------------------------------------------------------
 
@@ -120,7 +199,19 @@ INSERT INTO `transakcje` (`id`, `klient_id`, `kwota`, `typ_transakcji`, `data_tr
 (15, 5, 1.00, 'przelew', '2025-05-07 14:44:51', 'Przelew na konto nr 51162946997417335010881787'),
 (16, 3, 4.00, 'przelew', '2025-05-07 14:45:57', 'Przelew na konto nr 51162946997417335010881787'),
 (17, 3, 4.00, 'przelew', '2025-05-07 14:46:08', 'Przelew na konto nr 51162946997417335010881787'),
-(18, 5, 4.00, 'przelew', '2025-05-07 14:46:24', 'Przelew na konto nr 51162946997417335010881787');
+(18, 5, 4.00, 'przelew', '2025-05-07 14:46:24', 'Przelew na konto nr 51162946997417335010881787'),
+(21, 3, 23.00, 'wplata', '2025-06-15 17:50:27', '213123'),
+(22, 3, 23.00, 'wplata', '2025-06-15 17:52:29', '213123'),
+(23, 3, 23.00, 'wplata', '2025-06-15 17:52:34', '3'),
+(24, 3, 1.00, 'wplata', '2025-06-15 17:52:46', '23'),
+(25, 5, 4.00, 'przelew', '2025-06-15 18:10:23', 'Przelew do 51162946997417335010881787: 213123'),
+(26, 3, 4.00, 'wplata', '2025-06-15 18:10:23', 'Otrzymano przelew od 10950320095511098488059314: 213123'),
+(27, 3, 2.00, 'przelew', '2025-06-15 18:11:15', 'Przelew do 10950320095511098488059314: 213123'),
+(28, 5, 2.00, 'wplata', '2025-06-15 18:11:15', 'Otrzymano przelew od 51162946997417335010881787: 213123'),
+(29, 3, -9.00, 'przelew', '2025-06-15 18:12:54', 'Przelew do 10950320095511098488059314: -2'),
+(30, 5, -9.00, 'wplata', '2025-06-15 18:12:54', 'Otrzymano przelew od 51162946997417335010881787: -2'),
+(31, 3, 23.00, 'przelew', '2025-06-15 18:15:18', 'Przelew do 10950320095511098488059314TYTUŁ: 4'),
+(32, 5, 23.00, 'wplata', '2025-06-15 18:15:18', 'Otrzymano przelew od 51162946997417335010881787TYTUŁ: 4');
 
 -- --------------------------------------------------------
 
@@ -214,19 +305,19 @@ ALTER TABLE `klienci`
 -- AUTO_INCREMENT for table `kredyty`
 --
 ALTER TABLE `kredyty`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `logi_dostepu`
 --
 ALTER TABLE `logi_dostepu`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `transakcje`
 --
 ALTER TABLE `transakcje`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
 -- AUTO_INCREMENT for table `uzytkownicy`
