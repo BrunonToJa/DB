@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Cze 15, 2025 at 08:22 PM
+-- Generation Time: Cze 16, 2025 at 09:41 PM
 -- Wersja serwera: 10.4.32-MariaDB
 -- Wersja PHP: 8.2.12
 
@@ -25,6 +25,15 @@ DELIMITER $$
 --
 -- Procedury
 --
+CREATE DEFINER=`root`@`localhost` PROCEDURE `aktualizuj_ilosc_kart` ()   BEGIN
+    UPDATE klienci k
+    SET k.ilosc_kart = (
+        SELECT COUNT(*) 
+        FROM karty c 
+        WHERE c.klient_id = k.id
+    );
+END$$
+
 CREATE DEFINER=`root`@`localhost` PROCEDURE `DodajKredyt` (IN `in_klient_id` INT, IN `in_kwota_kredytu` DECIMAL(15,2), IN `in_liczba_rat` INT)   BEGIN
     DECLARE in_pozostale_raty INT DEFAULT in_liczba_rat;
     DECLARE in_pozostala_kwota DECIMAL(15,2) DEFAULT in_kwota_kredytu;
@@ -105,6 +114,26 @@ CREATE TABLE `karty` (
 INSERT INTO `karty` (`id`, `klient_id`, `numer_karty`, `data_waznosci`, `cvv`) VALUES
 (9, 3, '1234567812345678', '2028-12-31', '123');
 
+--
+-- Wyzwalacze `karty`
+--
+DELIMITER $$
+CREATE TRIGGER `karta_po_dodaniu` AFTER INSERT ON `karty` FOR EACH ROW BEGIN
+    UPDATE klienci
+    SET ilosc_kart = ilosc_kart + 1
+    WHERE id = NEW.klient_id;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `karty_po_usunieciu` AFTER DELETE ON `karty` FOR EACH ROW BEGIN
+    UPDATE klienci
+    SET ilosc_kart = GREATEST(ilosc_kart - 1, 0)
+    WHERE id = OLD.klient_id;
+END
+$$
+DELIMITER ;
+
 -- --------------------------------------------------------
 
 --
@@ -117,16 +146,17 @@ CREATE TABLE `klienci` (
   `imie` varchar(50) NOT NULL,
   `nazwisko` varchar(50) NOT NULL,
   `numer_konta` varchar(30) NOT NULL,
-  `saldo` decimal(15,2) DEFAULT 0.00
+  `saldo` decimal(15,2) DEFAULT 0.00,
+  `ilosc_kart` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `klienci`
 --
 
-INSERT INTO `klienci` (`id`, `uzytkownik_id`, `imie`, `nazwisko`, `numer_konta`, `saldo`) VALUES
-(3, 5, 'Karol', 'Grajek', '51162946997417335010881787', 40224.65),
-(5, 7, 'Anita', 'Anita', '10950320095511098488059314', 100004.00);
+INSERT INTO `klienci` (`id`, `uzytkownik_id`, `imie`, `nazwisko`, `numer_konta`, `saldo`, `ilosc_kart`) VALUES
+(3, 5, 'Karol', 'Grajek', '51162946997417335010881787', 40227.65, 1),
+(5, 7, 'Anita', 'Anita', '10950320095511098488059314', 7956676.00, 0);
 
 -- --------------------------------------------------------
 
@@ -149,7 +179,8 @@ CREATE TABLE `kredyty` (
 --
 
 INSERT INTO `kredyty` (`id`, `klient_id`, `kwota_kredytu`, `liczba_rat`, `pozostale_raty`, `pozostala_kwota`, `data_udzielenia`) VALUES
-(1, 3, 23.00, 2, 2, 23.00, '2025-06-15');
+(1, 3, 23.00, 2, 2, 23.00, '2025-06-15'),
+(2, 5, 7856675.00, 2147483647, 2147483647, 7856675.00, '2025-06-16');
 
 -- --------------------------------------------------------
 
@@ -171,7 +202,33 @@ CREATE TABLE `logi_dostepu` (
 INSERT INTO `logi_dostepu` (`id`, `uzytkownik_id`, `data_logowania`, `sukces`) VALUES
 (3, 5, '2025-06-15 18:00:02', 1),
 (4, 5, '2025-06-15 18:08:00', 1),
-(5, 2, '2025-06-15 18:16:28', 1);
+(5, 2, '2025-06-15 18:16:28', 1),
+(6, 2, '2025-06-16 11:49:56', 1),
+(7, 5, '2025-06-16 16:49:52', 1),
+(8, 2, '2025-06-16 17:48:24', 1),
+(9, 5, '2025-06-16 17:59:07', 1),
+(10, 5, '2025-06-16 18:25:00', 0),
+(11, 5, '2025-06-16 18:25:12', 0),
+(12, 2, '2025-06-16 18:25:41', 0),
+(13, 2, '2025-06-16 18:26:43', 1),
+(14, 5, '2025-06-16 18:26:54', 1),
+(15, 5, '2025-06-16 18:34:45', 1),
+(16, 2, '2025-06-16 19:03:04', 1),
+(17, 5, '2025-06-16 19:03:32', 1),
+(18, 2, '2025-06-16 19:04:34', 1),
+(19, 5, '2025-06-16 19:05:27', 1),
+(20, 5, '2025-06-16 19:08:43', 1),
+(21, 7, '2025-06-16 19:12:11', 1),
+(22, 2, '2025-06-16 19:12:45', 1),
+(23, 7, '2025-06-16 19:14:15', 1),
+(24, 7, '2025-06-16 19:15:30', 1),
+(25, 7, '2025-06-16 19:15:41', 1),
+(26, 7, '2025-06-16 19:16:46', 0),
+(27, 7, '2025-06-16 19:16:50', 0),
+(28, 5, '2025-06-16 19:16:55', 0),
+(29, 2, '2025-06-16 19:17:34', 0),
+(30, 5, '2025-06-16 19:25:23', 1),
+(31, 2, '2025-06-16 19:36:43', 1);
 
 -- --------------------------------------------------------
 
@@ -211,7 +268,11 @@ INSERT INTO `transakcje` (`id`, `klient_id`, `kwota`, `typ_transakcji`, `data_tr
 (29, 3, -9.00, 'przelew', '2025-06-15 18:12:54', 'Przelew do 10950320095511098488059314: -2'),
 (30, 5, -9.00, 'wplata', '2025-06-15 18:12:54', 'Otrzymano przelew od 51162946997417335010881787: -2'),
 (31, 3, 23.00, 'przelew', '2025-06-15 18:15:18', 'Przelew do 10950320095511098488059314TYTUŁ: 4'),
-(32, 5, 23.00, 'wplata', '2025-06-15 18:15:18', 'Otrzymano przelew od 51162946997417335010881787TYTUŁ: 4');
+(32, 5, 23.00, 'wplata', '2025-06-15 18:15:18', 'Otrzymano przelew od 51162946997417335010881787TYTUŁ: 4'),
+(33, 5, 3.00, 'przelew', '2025-06-16 19:12:23', 'Przelew do 51162946997417335010881787 TYTUŁ: 21312312312'),
+(34, 3, 3.00, 'wplata', '2025-06-16 19:12:23', 'Otrzymano przelew od 10950320095511098488059314 TYTUŁ: 21312312312'),
+(35, 3, 123.00, 'przelew', '2025-06-16 19:32:05', 'Przelew do 51162946997417335010881787 TYTUŁ: 321'),
+(36, 3, 123.00, 'wplata', '2025-06-16 19:32:05', 'Otrzymano przelew od 51162946997417335010881787 TYTUŁ: 321');
 
 -- --------------------------------------------------------
 
@@ -305,19 +366,19 @@ ALTER TABLE `klienci`
 -- AUTO_INCREMENT for table `kredyty`
 --
 ALTER TABLE `kredyty`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `logi_dostepu`
 --
 ALTER TABLE `logi_dostepu`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT for table `transakcje`
 --
 ALTER TABLE `transakcje`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT for table `uzytkownicy`
