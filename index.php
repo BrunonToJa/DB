@@ -14,7 +14,7 @@ $error = isset($_GET['error']);
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <link rel="stylesheet" href="style/style.css">
+    <link rel="stylesheet" href="style/style2.css">
     <meta charset="UTF-8">
     <title>Logowanie</title>
 </head>

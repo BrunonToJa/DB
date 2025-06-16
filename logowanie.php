@@ -11,32 +11,31 @@ $stmt->execute();
 $stmt->store_result();
 
 $redirect = 'index.php?error=1';
-if ($stmt->num_rows === 1) 
+if ($stmt->num_rows === 1) {
     $stmt->bind_result($user_id, $db_password, $role);
     $stmt->fetch();
 
     if ($password === $db_password) {
-    $success = ($password === $db_password) ? 1 : 0;
-
-    if ($success) {
         $_SESSION['username'] = $username;
         $_SESSION['role'] = $role;
-        $proc = $mysqli->prepare('CALL ZalogujUzytkownika(?, ?)');
-        $proc->bind_param('ii', $user_id, $success);
-        $proc->execute();
-        $proc->close();;
+        $_SESSION['user_id'] = $user_id; 
+
+        $log_stmt = $mysqli->prepare("INSERT INTO logi_dostepu (uzytkownik_id, sukces) VALUES (?, 1)");
+        $log_stmt->bind_param('i', $user_id);
+        $log_stmt->execute();
         if ($role === 'administrator') {
             $redirect = 'admin.php';
         } else {
             $redirect = 'klient.php';
         }
+    } else {
+        $log_stmt = $mysqli->prepare("INSERT INTO logi_dostepu (uzytkownik_id, sukces) VALUES (?, 0)");
+        $log_stmt->bind_param('i', $user_id);
+        $log_stmt->execute();
     }
 }
-
-$stmt->close();
 
 $mysqli->close();
 header("Location: $redirect");
 exit();
-?>
 ?>
